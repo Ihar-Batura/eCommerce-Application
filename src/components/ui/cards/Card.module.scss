@@ -5,12 +5,23 @@
   height: 508px;
   border-radius: $border-radius;
   border: 1px solid $modal-border;
+  transition: all ease 0.5s;
+  cursor: pointer;
+
+  &:hover {
+    @media (hover: hover) and (pointer: fine) {
+      box-shadow: 0 8px 24px $shadow-color;
+      transform: scale(1.02);
+      border-color: $card-hover-border;
+    }
+  }
 }
 
 .cardImage {
   width: 232px;
   height: 200px;
   object-fit: contain;
+  padding: 15px;
 }
 
 .cardInfo {
@@ -18,8 +29,16 @@
   height: 308px;
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
   padding: 16px;
   background-color: $button-secondary;
+  border-radius: $border-radius;
+}
+
+.cardInfoWrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .price {
@@ -28,38 +47,43 @@
   color: $button-dark;
 }
 
-.discount {
-  font-size: 18px;
-  font-weight: 500;
-  margin-bottom: 10px;
-  color: $discount-color;
+.priceContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.strikethrough {
+  text-decoration: line-through;
+  color: $label;
+  font-size: 20px;
+  opacity: 0.7;
+}
+
+.line {
+  background-color: $button-dark;
+  height: 0.3px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.discountedPrice {
+  font-size: 24px;
+  font-weight: 600;
+  color: $discounted-price;
 }
 
 .name {
   font-size: 22px;
   font-weight: 600;
-  color: $text;
+  color: $button-dark;
+  padding-bottom: 10px;
+  line-height: normal;
 }
 
 .description {
   font-size: 16px;
   color: $label;
-}
-
-.buttonsContainer {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  margin-top: auto;
-}
-
-.button {
-  width: 86px;
-  height: 32px;
-  font-size: 14px;
-  color: $product-name-color;
-  background-color: $button-dark;
-  border: none;
-  border-radius: $border-radius;
-  cursor: pointer;
+  margin-top: 13px;
 }
