@@ -8,6 +8,8 @@ import { Header } from './components/layout/header/header';
 import Footer from './components/layout/footer/Footer';
 import { AuthProvider } from './shared/context/auth-context';
 import { RedirectIfAuthenticatedRoute } from './components/routes/RedirectIfAuthenticatedRoute';
+import { RedirectIfNotAuthenticatedRoute } from '@components/routes/RedirectIfNotAuthenticatedRoute';
+import { ProfilePage } from '@pages/profile/Profile';
 import { ProductPage } from '@pages/product/Product';
 import { CategoryPage } from '@pages/catalog/category/CategoryPage';
 import { CatalogPage } from '@pages/catalog/CatalogPage';
@@ -37,6 +39,16 @@ export function App() {
             </RedirectIfAuthenticatedRoute>
           }
         />
+
+        <Route
+          path="/profile"
+          element={
+            <RedirectIfNotAuthenticatedRoute>
+              <ProfilePage />
+            </RedirectIfNotAuthenticatedRoute>
+          }
+        />
+
         <Route
           path="/catalog/vacuums"
           element={<CategoryPage page="vacuums" />}
@@ -58,6 +70,7 @@ export function App() {
           element={<CategoryPage page="lighting" />}
         />
         <Route path="/product" element={<ProductPage />} />
+
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <Footer />
