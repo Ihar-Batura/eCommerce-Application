@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import styles from './TeamMembers.module.scss';
-import yuliaImage from '../../../assets/images/junior.jpg';
-import igorImage from '../../../assets/images/Igor.jpg';
-import goldenCup from '../../../assets/images/team.png';
-import alenaImage from '../../../assets/images/Alena.jpg';
+import yuliaImage from '@assets/images/junior.jpg';
+import igorImage from '@assets/images/Igor.jpg';
+import goldenCup from '@assets/images/team.png';
+import alenaImage from '@assets/images/Alena.jpg';
 
 interface TeamMember {
   name: string;
@@ -24,7 +24,7 @@ const TeamMembers: React.FC = () => {
       description: 'Team Lead | Project Manager | Frontend Development',
       bio: [
         'Math & Computer Science Genius.',
-        'Skilled Programmer with a Master Degree in Applied Mathematics and Computer Science.',
+        "Skilled Programmer with a Master's Degree in Applied Mathematics and Computer Science.",
         'Excelled in Physics and Chemistry Olympiads during her School Years.',
         'Experience as a Project Manager.',
       ],
@@ -36,6 +36,7 @@ const TeamMembers: React.FC = () => {
         'Developed user profile page with interactive functionality.',
         'Built shopping cart page with order processing functionality.',
         'Created robust validation system for form inputs and user data.',
+        'Fixed SonarQube code quality issues and integrated mentors suggestions to optimize performance.',
       ],
       gitHubUrl: 'https://github.com/morven2018',
     },
@@ -57,6 +58,7 @@ const TeamMembers: React.FC = () => {
         'Engineered secure login Authentication system with form validation and error handling.',
         'Fixed SonarQube code quality issues and integrated mentors suggestions to optimize performance.',
         'Implemented a router for page navigation and redirecting authorized/unauthorized users based on manual browser URL changes.',
+        'Reviewed Junior Developer code, providing constructive feedback and mentorship.',
       ],
       gitHubUrl: 'https://github.com/Ihar-Batura',
     },
