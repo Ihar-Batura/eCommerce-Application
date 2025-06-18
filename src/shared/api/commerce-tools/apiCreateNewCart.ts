@@ -1,6 +1,7 @@
 import { commercetoolsConfig } from './config';
 import { getTokenFromLS } from '../local-storage/getTokenFromLS';
-import { openDialog } from '@services/DialogService';
+import { handleCatchError } from '@components/ui/error/catchError';
+import { getAnonymousSessionToken } from './getAnonymousSessionToken';
 
 interface CartData {
   type: string;
@@ -70,23 +71,29 @@ export async function apiCreateNewCart(): Promise<CartData | null> {
 
     if (!response.ok) {
       const errorDetails = await response.json();
-      const errorMessage = errorDetails.message;
-      throw new Error(`Request failed while creating cart: ${errorMessage}`);
+      if (errorDetails.statusCode === 401) {
+        const newToken = await getAnonymousSessionToken();
+
+        if (!newToken) return null;
+
+        await fetch(url, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${newToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            currency: 'USD',
+          }),
+        });
+      }
     }
 
     const result: CartData = await response.json();
 
     return result;
   } catch (error) {
-    let message = 'Error creating cart';
-
-    if (error instanceof Error) {
-      message = error.message;
-    } else if (typeof error === 'string') {
-      message = error;
-    }
-
-    openDialog(message, true);
+    handleCatchError(error, 'Error creating cart');
 
     return null;
   }

@@ -8,6 +8,8 @@ import { apiAddProductToCart } from '@shared/api/commerce-tools/apiAddProductToC
 import { getCartIdFromLS } from '@shared/api/local-storage/getCartIdFromLS';
 import { apiCreateNewCart } from '@shared/api/commerce-tools/apiCreateNewCart';
 import { apiDeleteProductFromCart } from '@shared/api/commerce-tools/apiDeleteProductFromCart';
+import { useCart } from '@shared/context/cart/useCart';
+import { handleCatchError } from '@components/ui/error/catchError';
 
 interface VariantsData {
   iconUrl: string;
@@ -33,6 +35,7 @@ export default function ProductCard({
 }: Readonly<ProductCard>) {
   const [isProductInCart, setIsProductInCart] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const { setCart } = useCart();
 
   useEffect(() => {
     const checkIfInCart = async () => {
@@ -53,15 +56,7 @@ export default function ProductCard({
           });
         }
       } catch (error) {
-        let message = 'Error get cart data';
-
-        if (error instanceof Error) {
-          message = error.message;
-        } else if (typeof error === 'string') {
-          message = error;
-        }
-
-        openDialog(message, true);
+        handleCatchError(error, 'Error get cart data');
       }
     };
 
@@ -84,6 +79,9 @@ export default function ProductCard({
 
         await apiDeleteProductFromCart(lineItem.id, quantity);
 
+        const response = await apiGetCartById();
+        setCart(response);
+
         setQuantity(1);
         setIsProductInCart(false);
       } else if (id) {
@@ -99,18 +97,14 @@ export default function ProductCard({
         }
 
         await apiAddProductToCart(id, quantity);
+
+        const response = await apiGetCartById();
+        setCart(response);
+
         setIsProductInCart(true);
       }
     } catch (error) {
-      let message = 'Error adding/removing product';
-
-      if (error instanceof Error) {
-        message = error.message;
-      } else if (typeof error === 'string') {
-        message = error;
-      }
-
-      openDialog(message, true);
+      handleCatchError(error, 'Error adding/removing product');
     }
   };
 

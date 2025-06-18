@@ -34,6 +34,19 @@ export default function CartResult({
 
   useEffect(() => {
     const storedPromo = localStorage.getItem('PromoCode');
+    setAppliedPromo(storedPromo);
+    setPromoInputValue(storedPromo ?? '');
+  }, [discountPercentage]);
+
+  useEffect(() => {
+    if (discountPercentage === 0 && appliedPromo) {
+      setAppliedPromo(null);
+      setPromoInputValue('');
+    }
+  }, [discountPercentage, appliedPromo]);
+
+  useEffect(() => {
+    const storedPromo = localStorage.getItem('PromoCode');
     if (storedPromo && data) {
       setAppliedPromo(storedPromo);
       setPromoInputValue(storedPromo);
@@ -173,7 +186,7 @@ export default function CartResult({
           </div>
         </div>
         <Button className={styles.button} disabled={isLoading}>
-          {isLoading ? 'Processing...' : 'Check out'}
+          {isLoading ? 'Processing...' : 'PLACE ORDER'}
         </Button>
       </div>
     );

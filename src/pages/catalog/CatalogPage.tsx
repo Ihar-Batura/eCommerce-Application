@@ -1,17 +1,24 @@
 import styles from './CatalogPage.module.scss';
 import { useState, useEffect } from 'react';
-import { ProductsByCategory, CardInfo } from '@shared/types/types';
+import {
+  ProductsByCategory,
+  CardInfo,
+  CartLineItem,
+} from '@shared/types/types';
 import { getTokenFromLS } from '@shared/api/local-storage/getTokenFromLS';
 import { getSearchedProducts } from '@shared/api/commerce-tools/getSearchedProducts';
-import { openDialog } from '@services/DialogService';
 
 import { Card } from '@components/ui/cards/Card';
 import { SortByComponent } from '@components/ui/sort/SortByComponent';
-import { TextField, FormControlLabel, Switch } from '@mui/material';
+import { TextField, FormControlLabel, Switch, Pagination } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { PriceRangeSlider } from '@components/ui/sort/range-slider/PriceRangeSlider';
 import { ColorRange } from '@components/ui/sort/color-range/ColorRange';
 import { Breadcrumbs } from '@components/ui/breadcrumbs/Breadcrumbs';
+import { buildSearchParams } from '@shared/utlis/searchParamsBuilder';
+import { apiGetCartById } from '@shared/api/commerce-tools/apiGetCartById';
+import { getCartIdFromLS } from '@shared/api/local-storage/getCartIdFromLS';
+import { handleCatchError } from '@components/ui/error/catchError';
 
 export type SortOption =
   | 'price_asc'
@@ -19,12 +26,6 @@ export type SortOption =
   | 'name_asc'
   | 'name_desc'
   | 'normal';
-
-function determineFuzzyLevel(length: number) {
-  if (length <= 2) return 0;
-  if (length <= 5) return 1;
-  return 2;
-}
 
 export const CatalogPage = () => {
   const [productsData, setProductsData] = useState<ProductsByCategory | null>(
@@ -35,6 +36,8 @@ export const CatalogPage = () => {
   const [priceRange, setPriceRange] = useState([0, 0]);
   const [discount, setDiscount] = useState(false);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const [paginationOffset, setPaginationOffset] = useState(0);
+  const [lineItemsInCart, setLineItemsInCart] = useState<CartLineItem[]>([]);
 
   const breadcrumbItems = [
     { path: '/', name: 'Home' },
@@ -47,65 +50,21 @@ export const CatalogPage = () => {
         const token = getTokenFromLS();
         if (!token) return;
 
-        const text = encodeURIComponent(searchText.trim());
-        const fuzzyLevel = determineFuzzyLevel(text.length);
-        const paramsArray = [];
-
-        if (text.length > 1) {
-          paramsArray.push(
-            `text.en-US=*${text}*&fuzzy=true&fuzzyLevel=${fuzzyLevel}`
-          );
-        }
-
-        if (sortOption === 'name_asc') {
-          paramsArray.push('sort=name.en-US+asc');
-        }
-        if (sortOption === 'name_desc') {
-          paramsArray.push('sort=name.en-US+desc');
-        }
-        if (sortOption === 'price_asc') {
-          paramsArray.push('sort=price+asc');
-        }
-        if (sortOption === 'price_desc') {
-          paramsArray.push('sort=price+desc');
-        }
-
-        const [min, max] = priceRange;
-        if (
-          (min > 0 && max === 1000) ||
-          (min >= 0 && max < 1000) ||
-          (min > 0 && max < 1000)
-        ) {
-          paramsArray.push(
-            `filter.query=variants.price.centAmount: range(${min * 100} to ${max ? max * 100 : '*'})`
-          );
-        }
-
-        if (discount) {
-          paramsArray.push('filter.query=variants.prices.discounted:exists');
-        }
-
-        if (selectedColors.length > 0) {
-          const colorFilter = selectedColors
-            .map((color) => `"${color}"`)
-            .join(',');
-          paramsArray.push(
-            `filter.query=variants.attributes.color:${colorFilter}`
-          );
-        }
-
-        paramsArray.push('limit=50');
-
-        const params = paramsArray.join('&');
-
         try {
+          const limit = 12;
+          const params = buildSearchParams({
+            searchText,
+            sortOption,
+            priceRange,
+            discount,
+            selectedColors,
+            paginationOffset,
+            limit,
+          });
           const data = await getSearchedProducts({ params, token });
           setProductsData(data);
         } catch (error) {
-          let message = 'Error fetching search products';
-          if (error instanceof Error) message = error.message;
-          else if (typeof error === 'string') message = error;
-          openDialog(message);
+          handleCatchError(error, 'Error fetching search products');
         }
       };
 
@@ -113,7 +72,39 @@ export const CatalogPage = () => {
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchText, sortOption, priceRange, discount, selectedColors]);
+  }, [
+    searchText,
+    sortOption,
+    priceRange,
+    discount,
+    selectedColors,
+    paginationOffset,
+  ]);
+
+  useEffect(() => {
+    const getCartLineItems = async () => {
+      try {
+        const cartId = getCartIdFromLS();
+        if (!cartId) return;
+
+        const cart = await apiGetCartById();
+        if (!cart?.lineItems) return;
+
+        setLineItemsInCart(cart.lineItems);
+      } catch (error) {
+        handleCatchError(error, 'Error get cart line items');
+      }
+    };
+
+    getCartLineItems();
+  }, [
+    searchText,
+    sortOption,
+    priceRange,
+    discount,
+    selectedColors,
+    paginationOffset,
+  ]);
 
   if (!productsData) {
     return <div className={styles.textLoading}>Loading...</div>;
@@ -142,13 +133,34 @@ export const CatalogPage = () => {
     setSelectedColors([]);
   };
 
-  const allColors = productsData.results.flatMap((product) => {
-    if (product.masterVariant) {
-      return product.masterVariant.attributes
-        .map((attribute) => attribute.value)
-        .flat(5);
-    }
-  });
+  const handleChangePageNumber = (
+    _event: React.ChangeEvent<unknown>,
+    page: number
+  ) => {
+    const offset = page === 1 ? 0 : (page - 1) * 12;
+    setPaginationOffset(offset);
+  };
+
+  const colorFacet = productsData.facets?.['variants.attributes.color'];
+  const allColors: string[] = [];
+  if (colorFacet && 'terms' in colorFacet && colorFacet.terms.length > 0) {
+    colorFacet.terms.forEach((el) => {
+      allColors.push(el.term);
+    });
+  }
+
+  const sortedColors = [...allColors].sort((a, b) => a.localeCompare(b));
+
+  const priceFacet = productsData.facets?.['variants.price.centAmount'];
+
+  let minPrice = 0;
+  let maxPrice = 9999;
+
+  if (priceFacet && 'ranges' in priceFacet && priceFacet.ranges.length > 0) {
+    const range = priceFacet.ranges[0];
+    minPrice = Math.floor(range.min / 100);
+    maxPrice = Math.ceil(range.max / 100);
+  }
 
   return (
     <>
@@ -195,39 +207,14 @@ export const CatalogPage = () => {
           />
 
           <ColorRange
-            colors={
-              allColors
-                .filter((value): value is string => typeof value === 'string')
-                .filter((el, ind) => ind === allColors.indexOf(el))
-                .sort((a, b) => a.localeCompare(b)) ?? []
-            }
+            colors={sortedColors}
             selectedColors={selectedColors}
             onChange={(colors) => setSelectedColors(colors)}
           />
 
           <PriceRangeSlider
-            min={
-              productsData.results.length
-                ? Math.min(
-                    ...productsData.results.map(
-                      (el) =>
-                        (el.masterVariant?.prices[0].value.centAmount ?? 0) /
-                        100
-                    )
-                  )
-                : 0
-            }
-            max={
-              productsData.results.length
-                ? Math.max(
-                    ...productsData.results.map(
-                      (el) =>
-                        (el.masterVariant?.prices[0].value.centAmount ?? 0) /
-                        100
-                    )
-                  )
-                : 0
-            }
+            min={minPrice}
+            max={maxPrice}
             onChange={handlePriceChange}
           />
           <button className={styles.button} onClick={handleClearFilter}>
@@ -246,14 +233,29 @@ export const CatalogPage = () => {
                 id={card.id}
                 name={card.name['en-US']}
                 description={card.description['en-US'] ?? 'Product description'}
-                price={card.masterVariant?.prices?.[0]?.value?.centAmount ?? 0}
+                price={card.masterVariant?.prices.at(0)?.value?.centAmount ?? 0}
                 discountedPrice={
                   card.masterVariant?.prices?.[0]?.discounted?.value
                     ?.centAmount ?? null
                 }
                 src={card.masterVariant?.images?.[0]?.url ?? '/dyson_icon.svg'}
+                isInCart={lineItemsInCart.some(
+                  (item) => item.productId === card.id
+                )}
               />
             ))}
+            <Pagination
+              count={Math.ceil(productsData?.total / 12)}
+              onChange={handleChangePageNumber}
+              className={styles.pagination}
+              sx={{
+                '& .MuiPagination-ul': {
+                  justifyContent: 'end',
+                },
+                display: { xs: 'flex', md: 'block' },
+                justifyContent: 'end',
+              }}
+            />
           </div>
         </div>
       </div>
