@@ -74,7 +74,7 @@
   box-sizing: border-box;
   cursor: pointer;
 
-   &:hover {
+  &:hover {
     @media (hover: hover) and (pointer: fine) {
       transform: scale(1.02);
       box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
@@ -140,11 +140,6 @@
     @media (hover: hover) and (pointer: fine) {
       background-color: #4c4467;
     }
-  }
-
-  &:focus {
-    outline: 3px solid black;
-    outline-offset: 2px;
   }
 
   &.copied {
