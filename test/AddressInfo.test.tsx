@@ -2,7 +2,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { AddressInfo } from '../src/components/layout/profile/AddressInfo';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import React from 'react';
 import '@testing-library/jest-dom/vitest';
 
 vi.mock('@mui/material', () => ({
@@ -105,7 +104,7 @@ const customer = {
     { id: 'addr-1', country: 'USA', city: 'New York' },
     { id: 'addr-2', country: 'UK', city: 'London' },
   ],
-  billingAddressIds: ['addr-1'],
+  billingAddressIdList: ['addr-1'],
   shippingAddressIds: ['addr-2'],
   defaultBillingAddressId: 'addr-1',
   defaultShippingAddressId: 'addr-2',
