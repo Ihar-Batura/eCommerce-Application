@@ -35,6 +35,7 @@ export default function ProductCard({
 }: Readonly<ProductCard>) {
   const [isProductInCart, setIsProductInCart] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { setCart } = useCart();
 
   useEffect(() => {
@@ -64,6 +65,9 @@ export default function ProductCard({
   }, [id]);
 
   const handleAddOrRemoveProduct = async () => {
+    if (isProcessing) return;
+
+    setIsProcessing(true);
     try {
       if (isProductInCart && id) {
         const updatedCart = await apiGetCartById();
@@ -77,12 +81,17 @@ export default function ProductCard({
           return;
         }
 
-        await apiDeleteProductFromCart(lineItem.id, quantity);
+        await apiDeleteProductFromCart(
+          lineItem.id,
+          quantity,
+          updatedCart?.version
+        );
 
         const response = await apiGetCartById();
         setCart(response);
 
-        setQuantity(1);
+        const defaultQuantity = 1;
+        setQuantity(defaultQuantity);
         setIsProductInCart(false);
       } else if (id) {
         const cartId = getCartIdFromLS();
@@ -105,6 +114,8 @@ export default function ProductCard({
       }
     } catch (error) {
       handleCatchError(error, 'Error adding/removing product');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
